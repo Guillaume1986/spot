@@ -223,10 +223,11 @@ label { display: block; font-weight: 600; margin: 10px 0 4px; font-size: .95rem;
 @keyframes pop { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .flash.rose { background: #fce7f3; border-color: #ec4899; color: #9d174d; }
 .flash.bleu { background: #dbeafe; border-color: #3b82f6; color: #1e3a8a; }
-.flash.jaune { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+/* Le groupe s'appelle « jaune » dans les données, mais les cartes de l'école sont mauves */
+.flash.jaune { background: #ede9fe; border-color: #8b5cf6; color: #5b21b6; }
 .legend { display: flex; gap: 12px; justify-content: center; align-items: center; color: var(--muted); font-size: .9rem; flex-wrap: wrap; }
 .sw { display: inline-block; width: 14px; height: 14px; border-radius: 4px; margin-right: 4px; vertical-align: middle; }
-.sw.rose { background: #ec4899; } .sw.bleu { background: #3b82f6; } .sw.jaune { background: #f59e0b; }
+.sw.rose { background: #ec4899; } .sw.bleu { background: #3b82f6; } .sw.jaune { background: #8b5cf6; }
 
 /* ---------- Calligraphie ---------- */
 .canvas-wrap { background: #fff; border: 3px solid #d5deef; border-radius: 16px; padding: 6px; max-width: 740px; margin: 0 auto; }

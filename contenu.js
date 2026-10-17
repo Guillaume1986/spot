@@ -154,7 +154,7 @@ const SONS = [
 const TEMPETE_DEFAUT = {
   rose: ["a", "e", "i", "o", "u", "y", "é", "è"],        // voyelles
   bleu: ["l", "m", "s", "r", "f", "n", "j", "p", "b"],   // consonnes
-  jaune: ["un", "ch", "ou", "in"],                        // sons amoureux
+  jaune: ["un", "ch", "in", "ou", "on"],                  // sons amoureux (cartes mauves)
 };
 const TEMPETE_REPERES = {
   a: "ami", e: "le", i: "île", o: "olive", u: "une", y: "pyjama", é: "école", è: "mère", ê: "forêt",

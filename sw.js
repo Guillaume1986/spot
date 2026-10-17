@@ -1,6 +1,6 @@
 // Service worker : permet d'ouvrir Spot sans Internet une fois visité.
 // Stratégie « réseau d'abord » : on prend la version en ligne si possible, sinon la copie en cache.
-const CACHE = "spot-v2";
+const CACHE = "spot-v3";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./data.js", "./contenu.js", "./contenu-clara.js", "./firebase-config.js", "./sync.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {

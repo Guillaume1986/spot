@@ -50,6 +50,12 @@ function load() {
           p.progress = Object.assign({ points: 0, completed: {}, weekStart: null, history: [] }, p.progress || {});
           p.plan = p.plan || dp.plan; p.library = p.library || dp.library;
           p.grade = p.grade || dp.grade; p.gradeLabel = p.gradeLabel || dp.gradeLabel; p.name = p.name || dp.name;
+          p.gender = p.gender || dp.gender;
+          // Nouveau plan d'étude livré dans data.js : il remplace la semaine type (les points restent)
+          if (dp.planEdition && p.planEdition !== dp.planEdition) {
+            p.plan = dp.plan; p.planEdition = dp.planEdition; p.progress.completed = {};
+            for (const t of dp.library) if (!p.library.some((x) => x.title === t.title)) p.library.push(t);
+          }
         }
       }
       return s;
@@ -110,11 +116,13 @@ function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--
 function normalize(s) { return String(s).trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").replace(/[’']/g, "'").replace(/\s+/g, " "); }
 function normalizeStrict(s) { return String(s).trim().toLowerCase().replace(/[’]/g, "'").replace(/\s+/g, " "); }
 function fmtNum(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+// Accord selon le profil : G("prêt", "prête")
+function G(m, f, p = P()) { return p && p.gender === "f" ? f : m; }
 function line(key, vars = {}) {
   let t = pick(SPOT_LINES[key]);
   const all = Object.assign({ name: P() ? P().name : "" }, vars);
   for (const k in all) t = t.replaceAll("{" + k + "}", all[k]);
-  return t;
+  return t.replace(/\{([^{}|]*)\|([^{}|]*)\}/g, (_, m, f) => G(m, f));
 }
 function levelOf(points) { return Math.floor(points / POINTS_PER_LEVEL) + 1; }
 function sonByKey(k) { return SONS.find((s) => s.key === k) || SONS[0]; }
@@ -604,7 +612,7 @@ function exConjug(t) {
     return `${stepsBar(["Je lis le tableau", "Je conjugue"], 0)}
       <div class="question text">${esc(t.verbe.toUpperCase())} · ${C3_TEMPS[temps]}</div>
       <div class="conj-table">${rows}</div>
-      <div class="actions"><button class="ghost" data-action="say" data-text="${esc(temps === "participe" ? v.participe : C3_PRONOMS.map((pr, i) => (pr === "il" ? "il" : pr) + " " + v[temps][i]).join(". "))}">🔊 Spot récite</button><button class="big accent" data-action="conj-go">Je suis prête 🙈</button></div>`;
+      <div class="actions"><button class="ghost" data-action="say" data-text="${esc(temps === "participe" ? v.participe : C3_PRONOMS.map((pr, i) => (pr === "il" ? "il" : pr) + " " + v[temps][i]).join(". "))}">🔊 Spot récite</button><button class="big accent" data-action="conj-go">Je suis ${G("prêt", "prête")} 🙈</button></div>`;
   }
   const it = ex.items[ex.step];
   return `${stepsBar(["Je lis le tableau", "Je conjugue"], 1)}<div class="counter">${ex.step + 1} / ${ex.items.length} · ${esc(t.verbe)} · ${C3_TEMPS[temps]}</div>
@@ -631,7 +639,7 @@ function exMots(t) {
     return `<div class="counter">Mot ${ex.step + 1} / ${ex.items.length}</div>${regle}${feedbackHTML()}
       <p style="text-align:center;font-size:1.2rem">Regarde bien le mot, puis cache-le !</p>
       <div class="word-card">${esc(word)}</div>
-      <div class="actions"><button class="ghost" data-action="say" data-text="${esc(word)}">🔊 Écouter</button><button class="accent big" data-action="hide-word">Je suis prêt 🙈</button></div>`;
+      <div class="actions"><button class="ghost" data-action="say" data-text="${esc(word)}">🔊 Écouter</button><button class="accent big" data-action="hide-word">Je suis ${G("prêt", "prête")} 🙈</button></div>`;
   }
   return `<div class="counter">Mot ${ex.step + 1} / ${ex.items.length}</div>${regle}
     <div class="question text">${dicter ? "Écris le mot que Spot a dit :" : "Écris le mot que tu as vu :"}</div>
@@ -1020,7 +1028,7 @@ function taskForm(p) {
     case "son": specific = `<label>Page du cahier des sons</label><select name="son">${opt(SONS, d.son, (s) => [s.key, `${s.label} — page ${s.page}`])}</select>
       <div class="hint">Déroulement : reconnaître la lettre, lire les syllabes, écouter et trouver, lire les mots, écouter et trouver, lire les phrases avec un parent.</div>`; break;
     case "tempete": specific = `<label>Cartes roses (voyelles), séparées par des virgules</label><input name="rose" value="${esc((d.rose || []).join(", "))}">
-      <label>Cartes bleues (consonnes)</label><input name="bleu" value="${esc((d.bleu || []).join(", "))}"><label>Cartes jaunes (sons amoureux)</label><input name="jaune" value="${esc((d.jaune || []).join(", "))}">`; break;
+      <label>Cartes bleues (consonnes)</label><input name="bleu" value="${esc((d.bleu || []).join(", "))}"><label>Cartes mauves (sons amoureux)</label><input name="jaune" value="${esc((d.jaune || []).join(", "))}">`; break;
     case "etiquettes": specific = `<label>Groupe de mots-étiquettes</label><select name="groupe" data-action="fill-words">${opt(Object.keys(ETIQUETTES).concat(["perso"]), d.groupe, (g) => [g, g === "perso" ? "Mes propres mots" : `Mots-étiquettes ${g} : ${ETIQUETTES[g].join(", ")}`])}</select>
       <label>Mots (un par ligne ou séparés par des virgules)</label><textarea name="words">${esc((d.words || []).join("\n"))}</textarea>`; break;
     case "calligraphie": specific = `<label>Lettre</label><select name="lettre">${opt(CALLI, d.lettre, (c) => [c.l, `${c.l} / ${c.l.toUpperCase()} — page ${c.page}${c.mots.length ? " (" + c.mots.join(", ") + ")" : ""}`])}</select>`; break;
@@ -1152,6 +1160,7 @@ function parentSettings(p) {
   const s = p.settings;
   return `<form data-action="save-settings"><h3 style="margin:0 0 8px">Réglages de ${esc(p.name)}</h3><div class="form-grid">
       <div><label>Prénom</label><input name="childName" value="${esc(p.name)}"></div>
+      <div><label>Spot lui parle au…</label><select name="gender"><option value="m" ${p.gender !== "f" ? "selected" : ""}>Masculin (prêt, champion)</option><option value="f" ${p.gender === "f" ? "selected" : ""}>Féminin (prête, championne)</option></select></div>
       <div><label>Points par mission</label><input type="number" name="pointsPerTask" value="${s.pointsPerTask}" min="1"></div>
       <div><label>Voix de Spot</label><select name="voice"><option value="1" ${s.voice ? "selected" : ""}>Activée</option><option value="0" ${!s.voice ? "selected" : ""}>Désactivée</option></select></div>
       <div><label>NIP parent (commun aux deux enfants)</label><input name="pin" value="${esc(state.pin)}" pattern="[0-9]{4}" maxlength="4"></div>
@@ -1241,7 +1250,7 @@ document.addEventListener("click", (e) => {
   if (a === "lib-del") { p.library.splice(Number(el.dataset.index), 1); save(); render(); return; }
   if (a === "reset-week") { if (confirm(`Remettre toutes les missions de la semaine de ${p.name} à « non faites » ?`)) { p.progress.completed = {}; save(); render(); } return; }
   if (a === "reset-progress") { if (confirm(`Remettre les points, le niveau et l'historique de ${p.name} à zéro ?`)) { p.progress = { points: 0, completed: {}, weekStart: mondayOf(new Date()), history: [] }; save(); render(); } return; }
-  if (a === "reset-profile") { if (confirm(`Effacer le plan et la banque de ${p.name} et revenir au plan d'étude par défaut ? (les points restent)`)) { const d = DEFAULT_PROFILES()[p.id]; p.plan = d.plan; p.library = d.library; p.progress.completed = {}; save(); render(); } return; }
+  if (a === "reset-profile") { if (confirm(`Effacer le plan et la banque de ${p.name} et revenir au plan d'étude par défaut ? (les points restent)`)) { const d = DEFAULT_PROFILES()[p.id]; p.plan = d.plan; p.library = d.library; p.planEdition = d.planEdition; p.progress.completed = {}; save(); render(); } return; }
   if (a === "voice-test") {
     const f = new FormData(el.closest("form"));
     say(`Salut ${p.name} ! Je suis Spot, ton robot. Bip bip ! On fait nos missions ensemble ?`, false,
@@ -1296,6 +1305,7 @@ document.addEventListener("submit", (e) => {
   if (a === "save-settings") {
     const f = new FormData(form);
     p.name = (f.get("childName") || p.name).trim() || p.name;
+    p.gender = f.get("gender") === "f" ? "f" : "m";
     const pin = (f.get("pin") || "").trim(); if (/^\d{4}$/.test(pin)) state.pin = pin;
     p.settings.pointsPerTask = Number(f.get("pointsPerTask")) || 10;
     p.settings.voice = f.get("voice") === "1";
