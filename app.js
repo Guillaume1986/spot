@@ -306,7 +306,7 @@ function taskSummary(t) {
     case "tempete": return `Cartes : ${[].concat(t.rose || [], t.bleu || [], t.jaune || []).join(" ")}`;
     case "etiquettes": return `Mots : ${(t.words || []).join(", ")}`;
     case "calligraphie": { const c = calliByLetter(t.lettre); return `Lettre ${c.l} / ${c.l.toUpperCase()}, page ${c.page}${c.mots.length ? " · " + c.mots.join(", ") : ""}`; }
-    case "mots": return `${t.mode === "dicter" ? "Dictée" : "Voir puis écrire"} · ${(t.words || []).length} mots : ${(t.words || []).slice(0, 8).join(", ")}${(t.words || []).length > 8 ? "…" : ""}`;
+    case "mots": return `${t.mode === "dicter" ? "Dictée" : "Voir puis écrire"} · ${t.count ? t.count + " mots au hasard parmi " : ""}${(t.words || []).length} mots :${(t.words || []).slice(0, 8).join(", ")}${(t.words || []).length > 8 ? "…" : ""}`;
     case "grille": return `Nombres de 0 à ${t.max}, ${t.count} questions`;
     case "spatial": return `${t.count} questions`;
     case "tables": return `${t.table === 0 ? "Tables mélangées" : "Table du " + t.table} (${t.op}) · ${t.count} questions${t.chrono ? " · chrono" : ""}`;
@@ -626,7 +626,7 @@ function nextConjug() { ex.step++; if (ex.step >= ex.items.length) finishTask();
 //  Mots (voir puis écrire / dictée)
 // ------------------------------------------------------------
 function startMots(t) {
-  ex.items = shuffle(t.words || []); ex.graded = ex.items.length;
+  ex.items = shuffle(t.words || []).slice(0, t.count || undefined); ex.graded = ex.items.length;
   ex.phase = t.mode === "dicter" ? "type" : "show";
   ex.regle = t.liste ? (listeByKey(t.liste) || {}).regle : "";
   if (t.mode === "dicter") setTimeout(() => say(ex.items[0], true), 600);
@@ -1106,7 +1106,7 @@ function readForm(form) {
   return d;
 }
 const KEEP = { lecture: ["instructions", "minutes"], tache: ["instructions"], son: ["son"], tempete: ["rose", "bleu", "jaune"], etiquettes: ["groupe", "words"],
-  calligraphie: ["lettre"], mots: ["bloc", "liste", "words", "mode"], grille: ["max", "count"], spatial: ["count"], tables: ["op", "table", "count", "chrono"],
+  calligraphie: ["lettre"], mots: ["bloc", "liste", "words", "mode", "count"], grille: ["max", "count"], spatial: ["count"], tables: ["op", "table", "count", "chrono"],
   nombres: ["max", "count"], conjug: ["verbe", "temps"], calcul: ["op", "min", "max", "count"], quiz: ["questions"] };
 function cleanTask(d, grade) {
   const out = { id: d.id, type: d.type, title: d.title || autoTitle(d, grade), subject: d.subject, emoji: d.emoji || TYPE_EMOJI[d.type] };

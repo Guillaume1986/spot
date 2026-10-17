@@ -49,10 +49,14 @@ const SPOT_LINES = {
 let _n = 0;
 const T = (obj) => Object.assign({ id: "d_" + (++_n) }, obj);
 const copy = (o) => JSON.parse(JSON.stringify(o));
+// Organisation de la semaine : le dimanche, grande journée de devoirs avec tout le contenu
+// de la semaine qui vient ; du lundi au vendredi, des missions de révision.
+const rev = (o, extra = {}) => Object.assign(copy(o), { title: "Révision : " + o.title }, extra);
 
 // ------------------------------------------------------------
 //  CHARLES — 1re année (plan d'étude semaine 7, 19 octobre)
-//  Vendredi 23 octobre : journée pédagogique, mission légère.
+//  Dimanche : tout le plan (pages des cahiers comprises).
+//  Lundi à jeudi : petits livres + révisions. Vendredi 23 : journée pédagogique.
 // ------------------------------------------------------------
 function buildCharles() {
   const LIVRES = { type: "lecture", subject: "Français", emoji: "📗", title: "Petits livres (reliure verte)",
@@ -64,14 +68,19 @@ function buildCharles() {
   const SON_N = { type: "son", subject: "Français", emoji: "🔊", title: "Le son n", son: "n" };
   const SON_E = { type: "son", subject: "Français", emoji: "🔊", title: "Le son è", son: "è" };
 
+  const CALLI_S = { type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre s (page 9)", lettre: "s" };
+  const CALLI_R = { type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre r (page 10)", lettre: "r" };
+
   const plan = {
-    lundi: [T(copy(LIVRES)), T(copy(SON_N)), T(copy(ETIQ_F)), T(copy(GRILLE29))],
-    mardi: [T(copy(LIVRES)), T(copy(TEMPETE)), T({ type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre s (page 9)", lettre: "s" }), T(copy(COMPARER))],
-    mercredi: [T(copy(LIVRES)), T(copy(SON_E)), T(copy(ETIQ_F)), T(copy(GRILLE29))],
-    jeudi: [T(copy(LIVRES)), T(copy(TEMPETE)), T({ type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre r (page 10)", lettre: "r" }), T(copy(COMPARER))],
+    lundi: [T(copy(LIVRES)), T(rev(SON_N)), T(rev(ETIQ_F)), T(rev(GRILLE29))],
+    mardi: [T(copy(LIVRES)), T(rev(TEMPETE)), T(rev(COMPARER)), T(rev(SON_E))],
+    mercredi: [T(copy(LIVRES)), T(rev(SON_N)), T(rev(ETIQ_F)), T(rev(GRILLE29))],
+    jeudi: [T(copy(LIVRES)), T(rev(TEMPETE)), T(rev(SON_E)), T(rev(COMPARER))],
     vendredi: [T(copy(LIVRES)),
       T({ type: "tache", subject: "Organisation", emoji: "🎒", title: "Préparer mon sac pour lundi", instructions: "Pas d'école aujourd'hui (journée pédagogique). Je mets dans mon sac mes livres de bibliothèque, mon sac de lecture et ma reliure verte signée, mon cartable Maison et ma boîte à lunch." })],
-    samedi: [], dimanche: [],
+    samedi: [],
+    dimanche: [T(copy(LIVRES)), T(copy(SON_N)), T(copy(SON_E)), T(copy(ETIQ_F)), T(copy(TEMPETE)),
+      T(copy(CALLI_S)), T(copy(CALLI_R)), T(copy(GRILLE29)), T(copy(COMPARER))],
   };
   const library = [
     copy(LIVRES), copy(TEMPETE), copy(GRILLE29), copy(COMPARER), copy(ETIQ_F),
@@ -88,7 +97,7 @@ function buildCharles() {
   ].concat(QUIZ_MATHS.map((q) => Object.assign({ type: "quiz" }, q)));
 
   return {
-    id: "charles", name: "Charles", grade: 1, gradeLabel: "1re année", gender: "m", planEdition: "2026-10-19",
+    id: "charles", name: "Charles", grade: 1, gradeLabel: "1re année", gender: "m", planEdition: "2026-10-19.2",
     spot: { body: "#5b8def", lunettes: "" },
     settings: copy(BASE_SETTINGS), plan, library,
     progress: { points: 0, completed: {}, weekStart: null, history: [] },
@@ -98,6 +107,7 @@ function buildCharles() {
 // ------------------------------------------------------------
 //  CLARA — 3e année (plan d'étude des semaines du 19 au 30 octobre)
 //  La même semaine type sert pour les deux semaines.
+//  Dimanche : tout le plan. Lundi à vendredi : lecture + révisions.
 // ------------------------------------------------------------
 function buildClara() {
   const LECTURE = { type: "lecture", subject: "Français", emoji: "📚", title: "Lecture : 15 minutes du livre de mon choix",
@@ -114,22 +124,29 @@ function buildClara() {
   const SIGNATURE_NOMBRES = { type: "tache", subject: "Maths", emoji: "✍️", title: "Lire la grille 2 à un parent et la faire signer",
     instructions: "Je lis à voix haute les nombres de la grille 2 (page 2 du cartable Maison) à un parent, qui signe la page." };
 
+  const GRAMMAIRE = { type: "tache", subject: "Grammaire", emoji: "📖", title: "Lire les pages 14, 15 et 16 du cahier de grammaire", instructions: "Je lis uniquement les pages 14, 15 et 16 de mon cahier de grammaire." };
+  const TAMTAM = { type: "tache", subject: "Maths", emoji: "📘", title: "Lire les pages 13, 14, 15 et 16 des savoirs Tam Tam", instructions: "Je lis les pages 13 à 16 de mes savoirs Tam Tam." };
+  const US = { type: "tache", subject: "Univers social", emoji: "🌍", title: "Univers social : stations 5, 6 et 7", instructions: "Je révise uniquement ce qui a été vu en classe dans les stations 5, 6 et 7. Évaluation le 4 novembre." };
+  const SCIENCES = { type: "tache", subject: "Sciences", emoji: "🔬", title: "Sciences : la leçon 2", instructions: "Je relis la leçon 2 et j'explique à un parent ce que j'ai retenu." };
+  // Toute la liste 1.4 en dictée courte : 12 mots tirés au hasard à chaque fois
+  const VOCAB_TOUT = { type: "mots", subject: "Vocabulaire", emoji: "🔑", title: "Liste 1.4 : La bonne clé (12 mots au hasard)", liste: "1.4", words: L14.mots.concat(L14.horsLaLoi), mode: "dicter", count: 12 };
+
   const plan = {
-    lundi: [T(copy(LECTURE)), T(voir(VOCAB_A)), T(copy(ADD4)),
-      T({ type: "tache", subject: "Grammaire", emoji: "📖", title: "Lire les pages 14, 15 et 16 du cahier de grammaire", instructions: "Je lis uniquement les pages 14, 15 et 16 de mon cahier de grammaire." })],
-    mardi: [T(copy(LECTURE)), T(copy(VOCAB_A)), T(copy(NOMBRES)),
-      T({ type: "tache", subject: "Maths", emoji: "📘", title: "Lire les pages 13, 14, 15 et 16 des savoirs Tam Tam", instructions: "Je lis les pages 13 à 16 de mes savoirs Tam Tam." })],
-    mercredi: [T(copy(LECTURE)), T(voir(VOCAB_B)), T(copy(ADD5)),
-      T({ type: "tache", subject: "Univers social", emoji: "🌍", title: "Révision des stations 5, 6 et 7", instructions: "Je révise uniquement ce qui a été vu en classe dans les stations 5, 6 et 7. Évaluation le 4 novembre." })],
-    jeudi: [T(copy(LECTURE)), T(copy(VOCAB_B)), T(copy(VOCAB_QU)), T(copy(SIGNATURE_NOMBRES)),
-      T({ type: "tache", subject: "Sciences", emoji: "🔬", title: "Révision de la leçon 2 de sciences", instructions: "Je relis la leçon 2 et j'explique à un parent ce que j'ai retenu." })],
-    vendredi: [T(copy(LECTURE)), T(copy(ADD4)), T(copy(ADD5)),
+    lundi: [T(copy(LECTURE)), T(rev(VOCAB_A)), T(rev(ADD4))],
+    mardi: [T(copy(LECTURE)), T(rev(VOCAB_B)), T(rev(NOMBRES)), T(rev(ADD5))],
+    mercredi: [T(copy(LECTURE)), T(rev(VOCAB_QU, { mode: "dicter" })), T(rev(ADD4)),
+      T(rev(US, { instructions: "Je redis à un parent ce que je retiens des stations 5, 6 et 7. Évaluation le 4 novembre." }))],
+    jeudi: [T(copy(LECTURE)), T(rev(VOCAB_TOUT)), T(rev(NOMBRES)), T(rev(ADD5))],
+    vendredi: [T(copy(LECTURE)), T(rev(VOCAB_TOUT)), T(rev(ADD4)),
+      T(rev(SCIENCES, { instructions: "Je redis à un parent ce que je retiens de la leçon 2 de sciences." }))],
+    samedi: [],
+    dimanche: [T(copy(LECTURE)), T(voir(VOCAB_A)), T(voir(VOCAB_B)), T(copy(VOCAB_QU)), T(copy(ADD4)), T(copy(ADD5)),
+      T(copy(NOMBRES)), T(copy(SIGNATURE_NOMBRES)), T(copy(GRAMMAIRE)), T(copy(TAMTAM)), T(copy(US)), T(copy(SCIENCES)),
       T({ type: "tache", subject: "Organisation", emoji: "✍️", title: "Correction et signature du contrôle du 16 octobre", instructions: "Je corrige mon contrôle du 16 octobre et je le fais signer par un parent." }),
       T({ type: "tache", subject: "Projet", emoji: "💡", title: "Devoir libre : préparer mon projet", instructions: "Je prépare mon devoir libre pour la semaine du 2 au 6 novembre et j'en parle à un parent." })],
-    samedi: [], dimanche: [],
   };
   const library = [
-    copy(LECTURE), copy(VOCAB_A), copy(VOCAB_B), copy(VOCAB_QU), copy(ADD4), copy(ADD5), copy(NOMBRES),
+    copy(LECTURE), copy(VOCAB_A), copy(VOCAB_B), copy(VOCAB_QU), copy(VOCAB_TOUT), copy(ADD4), copy(ADD5), copy(NOMBRES),
     { type: "tables", subject: "Maths", emoji: "➕", title: "Additions du 3 (Tam Tam p. 59)", op: "+", table: 3, count: 12, chrono: true },
     { type: "tables", subject: "Maths", emoji: "➖", title: "Soustractions du 3 (Tam Tam p. 59)", op: "-", table: 3, count: 12, chrono: true },
     { type: "conjug", subject: "Conjugaison", emoji: "🔤", title: "Conjuguer AIMER au présent", verbe: "aimer", temps: "present" },
@@ -147,7 +164,7 @@ function buildClara() {
    .concat(C3_QUIZ_MATHS.map((q) => Object.assign({ type: "quiz" }, q)));
 
   return {
-    id: "clara", name: "Clara", grade: 3, gradeLabel: "3e année", gender: "f", planEdition: "2026-10-19",
+    id: "clara", name: "Clara", grade: 3, gradeLabel: "3e année", gender: "f", planEdition: "2026-10-19.2",
     spot: { body: "#5b8def", lunettes: "#8b5cf6" },
     settings: copy(BASE_SETTINGS), plan, library,
     progress: { points: 0, completed: {}, weekStart: null, history: [] },
