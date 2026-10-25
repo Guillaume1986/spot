@@ -152,12 +152,12 @@ const SONS = [
 // ---------- Tempête de sons (cartes dans les sacs Ziploc) ----------
 // Chaque carte : le son + un mot repère que Spot dit pour vérifier
 const TEMPETE_DEFAUT = {
-  rose: ["a", "e", "i", "o", "u", "y", "é", "è"],        // voyelles
-  bleu: ["l", "m", "s", "r", "f", "n", "j", "p", "b"],   // consonnes
-  jaune: ["un", "ch", "in", "ou", "on"],                  // sons amoureux (cartes mauves)
+  rose: ["a", "e", "i", "o", "u", "y", "é", "è", "ë", "ê"],        // voyelles
+  bleu: ["l", "m", "s", "r", "f", "n", "j", "p", "b", "d", "t"],   // consonnes
+  jaune: ["un", "ch", "in", "ou", "on", "en", "an"],               // sons amoureux (cartes mauves)
 };
 const TEMPETE_REPERES = {
-  a: "ami", e: "le", i: "île", o: "olive", u: "une", y: "pyjama", é: "école", è: "mère", ê: "forêt",
+  a: "ami", e: "le", i: "île", o: "olive", u: "une", y: "pyjama", é: "école", è: "mère", ê: "forêt", ë: "Noël",
   l: "lune", m: "maman", s: "soleil", r: "rat", f: "fourmi", n: "nez", j: "jaune", p: "papa", b: "bébé",
   d: "dinde", t: "tortue", c: "café", k: "koala", g: "gâteau", v: "vache", h: "hibou", z: "zèbre", x: "taxi", w: "wapiti",
   un: "lundi", ch: "chat", ou: "loup", in: "lapin", on: "cochon", oi: "poisson", au: "bateau", eau: "bateau",

@@ -21,7 +21,7 @@ const TYPE_EMOJI = { lecture: "📗", son: "🔊", tempete: "🌪️", etiquette
 const CALC_MODES = {
   "+": "Addition (a + b)", "-": "Soustraction (a − b)", plus1: "1 de plus / 1 de moins", plus2: "2 de plus / 2 de moins",
   plus10: "10 de plus / 10 de moins", doubles: "Les doubles (a + a)", manquant: "Terme manquant (a + ? = c)",
-  comparer: "Comparer (<, >, =)", x: "Multiplication (a × b)", "grands+": "Addition de grands nombres", "grands-": "Soustraction de grands nombres",
+  comparer: "Comparer (<, >, =)", groupes2: "Dénombrer par groupes de 2", x: "Multiplication (a × b)", "grands+": "Addition de grands nombres", "grands-": "Soustraction de grands nombres",
 };
 const LETTER_FONTS = 6;
 
@@ -47,10 +47,11 @@ function load() {
           const p = s.profiles[id], dp = d.profiles[id];
           p.settings = Object.assign(deepCopy(BASE_SETTINGS), p.settings || {});
           p.spot = Object.assign({}, dp.spot, p.spot || {});
-          p.progress = Object.assign({ points: 0, completed: {}, weekStart: null, history: [] }, p.progress || {});
+          p.progress = Object.assign({ points: 0, completed: {}, weekStart: null, history: [], medals: {}, stats: {} }, p.progress || {});
           p.plan = p.plan || dp.plan; p.library = p.library || dp.library;
           p.grade = p.grade || dp.grade; p.gradeLabel = p.gradeLabel || dp.gradeLabel; p.name = p.name || dp.name;
           p.gender = p.gender || dp.gender;
+          if (p.sayName === undefined) p.sayName = dp.sayName || "";
           // Nouveau plan d'étude livré dans data.js : il remplace la semaine type (les points restent)
           if (dp.planEdition && p.planEdition !== dp.planEdition) {
             p.plan = dp.plan; p.planEdition = dp.planEdition; p.progress.completed = {};
@@ -149,8 +150,27 @@ function pickVoice(name) {
   const score = (v) => (/natural|online/i.test(v.name) ? 4 : 0) + (v.lang === "fr-CA" ? 2 : 0) + (/caroline|sylvie|nathalie|female/i.test(v.name) ? 1 : 0);
   return voices.slice().sort((a, b) => score(b) - score(a))[0] || null;
 }
+// Texte prêt à lire : sans émojis (la voix les décrit) et symboles mathématiques en mots
+function speakable(text) {
+  return String(text)
+    .replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}️‍⃣]/gu, "")
+    .replace(/\s*<\s*/g, " plus petit que ").replace(/\s*>\s*/g, " plus grand que ").replace(/\s*=\s*/g, " égale ")
+    .replace(/−/g, " moins ").replace(/×/g, " fois ").replace(/÷/g, " divisé par ")
+    .replace(/\bp\. ?(\d)/g, "page $1")
+    .replace(/\s+/g, " ").trim();
+}
+// Prénoms : la voix lit la prononciation choisie dans les réglages (ex. « Charle » pour éviter l'anglais)
+function withSpokenNames(text) {
+  for (const p of Object.values(state.profiles || {})) {
+    if (!p.sayName || !p.name) continue;
+    const n = p.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    text = text.replace(new RegExp(`(?<!\\p{L})${n}(?!\\p{L})`, "gu"), p.sayName);
+  }
+  return text;
+}
 function say(text, force = false, opts = {}) {
   const s = Object.assign({}, P() ? S() : BASE_SETTINGS, opts);
+  text = text ? speakable(opts.keepNames ? text : withSpokenNames(String(text))) : "";
   if ((!s.voice && !force) || !("speechSynthesis" in window) || !text) return;
   try {
     speechSynthesis.cancel();
@@ -187,11 +207,44 @@ function robotBips(kind = "hello") {
 // ------------------------------------------------------------
 //  Dessin de Spot (SVG) — selon le profil, l'humeur et le niveau
 // ------------------------------------------------------------
+// Accessoires : gagnés au niveau requis ou avec une médaille
+function unlockedFor(p, u) { return u.medal ? !!(p.progress.medals || {})[u.medal] : levelOf(p.progress.points) >= u.level; }
+// Ce que Spot porte à un endroit : le choix de l'enfant, sinon l'accessoire du plus haut niveau
+function wornIn(p, slot) {
+  const choice = (p.spot.wear || {})[slot];
+  if (choice === "none") return null;
+  if (slot === "yeux" && choice !== "soleil" && p.spot.lunettes) return null; // les lunettes du profil passent avant
+  const own = SPOT_UNLOCKS.filter((u) => u.slot === slot && unlockedFor(p, u));
+  if (own.some((u) => u.id === choice)) return choice;
+  const best = own.filter((u) => u.level).sort((a, b) => b.level - a.level)[0];
+  return best ? best.id : null;
+}
+function sparkle(x, y, s, delay) {
+  return `<path d="M${x} ${y - s} L${x + s / 3} ${y - s / 3} L${x + s} ${y} L${x + s / 3} ${y + s / 3} L${x} ${y + s} L${x - s / 3} ${y + s / 3} L${x - s} ${y} L${x - s / 3} ${y - s / 3} Z" fill="#fbbf24"><animate attributeName="opacity" values="1;.2;1" dur="1.6s" begin="${delay}s" repeatCount="indefinite"/></path>`;
+}
+const SPOT_PARTS = {
+  casquette: `<path d="M56 46 q38 -26 76 0 l0 6 l-76 0 z" fill="#ef4444"/><rect x="118" y="44" width="28" height="8" rx="4" fill="#ef4444"/>`,
+  couronne: `<path d="M64 42 l10 -16 l10 12 l10 -16 l10 16 l10 -12 l10 16 z" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>`,
+  magicien: `<rect x="68" y="4" width="52" height="38" rx="4" fill="#1f2937"/><rect x="68" y="30" width="52" height="7" fill="#8b5cf6"/><rect x="54" y="38" width="80" height="8" rx="4" fill="#111827"/><path d="M84 12 l2.5 5 5.5 .8 -4 3.9 1 5.5 -5 -2.6 -5 2.6 1 -5.5 -4 -3.9 5.5 -.8z" fill="#fbbf24"/>`,
+  citrouille: `<ellipse cx="94" cy="34" rx="32" ry="15" fill="#f97316"/><path d="M80 21 q-4 13 0 26 M108 21 q4 13 0 26 M94 19 v30" stroke="#ea580c" stroke-width="2.5" fill="none"/><rect x="91" y="12" width="6" height="9" rx="2" fill="#65a30d"/><path d="M97 15 q8 -6 12 0" stroke="#65a30d" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+  soleil: `<rect x="64" y="68" width="28" height="18" rx="6" fill="#111" opacity=".85"/><rect x="96" y="68" width="28" height="18" rx="6" fill="#111" opacity=".85"/><line x1="92" y1="76" x2="96" y2="76" stroke="#111" stroke-width="3"/>`,
+  musique: `<path d="M41 74 q53 -76 106 0" stroke="#1f2937" stroke-width="7" fill="none" stroke-linecap="round"/><rect x="28" y="64" width="22" height="36" rx="9" fill="#ef4444"/><rect x="138" y="64" width="22" height="36" rx="9" fill="#ef4444"/>`,
+  noeud: `<path d="M94 130 l-16 -9 v18 z M94 130 l16 -9 v18 z" fill="#ec4899"/><circle cx="94" cy="130" r="4.5" fill="#be185d"/>`,
+  cape: `<path d="M52 118 l-22 60 l34 -12 z" fill="#8b5cf6"/><path d="M136 118 l22 60 l-34 -12 z" fill="#8b5cf6"/>`,
+  ailes: `<g fill="#e0f2fe" stroke="#38bdf8" stroke-width="3"><path d="M58 136 C30 108 6 120 10 150 C24 140 40 146 58 152 Z"/><path d="M130 136 C158 108 182 120 178 150 C164 140 148 146 130 152 Z"/></g>`,
+  fusee: `<rect x="48" y="150" width="14" height="22" rx="5" fill="#9ca3af"/><rect x="126" y="150" width="14" height="22" rx="5" fill="#9ca3af"/><path d="M50 172 l5 12 l5 -12 z" fill="#f97316"/><path d="M128 172 l5 12 l5 -12 z" fill="#f97316"/>`,
+  planche: `<ellipse cx="94" cy="188" rx="44" ry="2.5" fill="#22d3ee" opacity=".6"/><rect x="52" y="181" width="84" height="7" rx="3.5" fill="#22c55e"/>`,
+  chien: `<g transform="translate(146 150)"><path d="M7 18 q-9 -7 -5 -15" stroke="#6b7280" stroke-width="3" fill="none" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" values="-18 7 18;18 7 18;-18 7 18" dur=".6s" repeatCount="indefinite"/></path>
+    <rect x="6" y="14" width="28" height="14" rx="6" fill="#9ca3af"/><rect x="9" y="26" width="5" height="10" rx="2" fill="#6b7280"/><rect x="26" y="26" width="5" height="10" rx="2" fill="#6b7280"/>
+    <rect x="22" y="2" width="17" height="15" rx="5" fill="#cbd5e1"/><rect x="24" y="-1" width="5" height="7" rx="2" fill="#6b7280"/><circle cx="33" cy="8" r="2.4" fill="#0ea5e9"/><rect x="37" y="11" width="4" height="3" rx="1.5" fill="#374151"/></g>`,
+  etoiles: [[18, 30, 7, 0], [170, 34, 6, .5], [12, 110, 5, 1], [176, 104, 7, .3], [30, 70, 4, .8]].map((a) => sparkle(...a)).join(""),
+};
 function spotSVG(mood = "happy", extraClass = "", profile = null) {
   const p = profile || P() || { spot: { body: "#5b8def", lunettes: "" }, progress: { points: 0 } };
   const level = levelOf(p.progress.points);
   const has = (id) => SPOT_UNLOCKS.some((u) => u.id === id && u.level <= level);
-  const body = p.spot.body || "#5b8def", dark = shade(body, -0.3), light = "#dce8ff", screen = "#1c2540";
+  const part = (slot) => SPOT_PARTS[wornIn(p, slot)] || "";
+  const body = wornIn(p, "peinture") === "dore" ? "#f5c542" : p.spot.body || "#5b8def", dark = shade(body, -0.3), light = "#dce8ff", screen = "#1c2540";
   let eyes, mouth;
   if (mood === "think") {
     eyes = `<circle cx="78" cy="78" r="7" fill="#7cf1ff"/><circle cx="110" cy="78" r="7" fill="#7cf1ff"/>`;
@@ -209,25 +262,22 @@ function spotSVG(mood = "happy", extraClass = "", profile = null) {
   const antenne = has("antenne")
     ? `<line x1="94" y1="40" x2="94" y2="14" stroke="${dark}" stroke-width="5"/><circle cx="94" cy="12" r="8" fill="#f59e0b"><animate attributeName="r" values="7;9;7" dur="1s" repeatCount="indefinite"/></circle>`
     : `<line x1="94" y1="40" x2="94" y2="24" stroke="${dark}" stroke-width="4"/><circle cx="94" cy="22" r="5" fill="#f59e0b"/>`;
-  const casquette = has("casquette") ? `<path d="M56 46 q38 -26 76 0 l0 6 l-76 0 z" fill="#ef4444"/><rect x="118" y="44" width="28" height="8" rx="4" fill="#ef4444"/>` : "";
   // Lunettes du profil (ex. : mauves pour Clara) : montures colorées, verres transparents
-  const lun = p.spot.lunettes;
+  const lun = wornIn(p, "yeux") === "soleil" ? "" : p.spot.lunettes;
   const lunettes = lun ? `<g fill="none" stroke="${lun}" stroke-width="4"><rect x="63" y="67" width="30" height="22" rx="9" fill="${lun}" fill-opacity=".15"/><rect x="95" y="67" width="30" height="22" rx="9" fill="${lun}" fill-opacity=".15"/><line x1="93" y1="76" x2="95" y2="76"/><line x1="48" y1="74" x2="63" y2="76"/><line x1="125" y1="76" x2="140" y2="74"/></g>` : "";
-  const soleil = has("soleil") && !lun ? `<rect x="64" y="68" width="28" height="18" rx="6" fill="#111" opacity=".85"/><rect x="96" y="68" width="28" height="18" rx="6" fill="#111" opacity=".85"/><line x1="92" y1="76" x2="96" y2="76" stroke="#111" stroke-width="3"/>` : "";
-  const cape = has("cape") ? `<path d="M52 118 l-22 60 l34 -12 z" fill="#8b5cf6"/><path d="M136 118 l22 60 l-34 -12 z" fill="#8b5cf6"/>` : "";
-  const fusee = has("fusee") ? `<rect x="48" y="150" width="14" height="22" rx="5" fill="#9ca3af"/><rect x="126" y="150" width="14" height="22" rx="5" fill="#9ca3af"/><path d="M50 172 l5 12 l5 -12 z" fill="#f97316"/><path d="M128 172 l5 12 l5 -12 z" fill="#f97316"/>` : "";
-  const couronne = has("couronne") ? `<path d="M64 42 l10 -16 l10 12 l10 -16 l10 16 l10 -12 l10 16 z" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>` : "";
   return `<svg class="spot-svg ${extraClass}" viewBox="0 0 188 190" xmlns="http://www.w3.org/2000/svg" aria-label="Spot le robot">
-    ${cape}${antenne}
+    ${part("effet")}${part("dos")}${antenne}
     <rect x="48" y="40" width="92" height="84" rx="22" fill="${body}"/>
     <rect x="58" y="54" width="72" height="60" rx="14" fill="${screen}"/>
-    <g class="spot-eyes">${eyes}</g>${mouth}${soleil}${lunettes}${casquette}${couronne}
+    <g class="spot-eyes">${eyes}</g>${mouth}${part("yeux")}${lunettes}
     <rect x="34" y="70" width="14" height="26" rx="6" fill="${dark}"/><rect x="140" y="70" width="14" height="26" rx="6" fill="${dark}"/>
+    ${part("oreilles")}${part("tete")}
     <rect x="82" y="124" width="24" height="10" fill="${dark}"/>
     <rect x="56" y="132" width="76" height="40" rx="14" fill="${body}"/>
     <circle cx="94" cy="152" r="9" fill="${light}"/><circle cx="94" cy="152" r="4" fill="${mood === "party" ? "#22c55e" : "#f59e0b"}"/>
-    ${fusee}
+    ${part("cou")}${wornIn(p, "pieds") === "fusee" ? part("pieds") : ""}
     <rect x="64" y="170" width="18" height="14" rx="6" fill="${dark}"/><rect x="106" y="170" width="18" height="14" rx="6" fill="${dark}"/>
+    ${wornIn(p, "pieds") === "planche" ? part("pieds") : ""}${part("ami")}
   </svg>`;
 }
 function shade(hex, amt) {
@@ -357,12 +407,27 @@ function renderHome() {
 function renderTrophies() {
   const p = P();
   const lvl = levelOf(p.progress.points);
-  const items = SPOT_UNLOCKS.map((u) => `<div class="trophy ${u.level <= lvl ? "" : "locked"}"><div class="big">${u.emoji}</div><b>${esc(u.name)}</b><div class="hint">Niveau ${u.level}</div></div>`).join("");
+  const medals = p.progress.medals || {};
+  const items = SPOT_UNLOCKS.map((u) => `<div class="trophy ${unlockedFor(p, u) ? "" : "locked"}"><div class="big">${u.emoji}</div><b>${esc(u.name)}</b>
+    <div class="hint">${u.medal ? "Médaille " + (MEDAILLES.find((m) => m.id === u.medal) || {}).emoji : "Niveau " + u.level}</div></div>`).join("");
   const next = SPOT_UNLOCKS.find((u) => u.level > lvl);
   const toNext = next ? (next.level - 1) * POINTS_PER_LEVEL - p.progress.points : 0;
+  // Garde-robe : un rang par endroit où Spot porte quelque chose
+  const wardrobe = Object.keys(SPOT_SLOTS).map((slot) => {
+    const own = SPOT_UNLOCKS.filter((u) => u.slot === slot && unlockedFor(p, u));
+    if (!own.length) return "";
+    const cur = wornIn(p, slot);
+    const btn = (id, label, on) => `<button class="small ${on ? "green" : "ghost"}" data-action="wear" data-slot="${slot}" data-id="${id}">${label}</button>`;
+    const rien = slot === "yeux" && p.spot.lunettes ? "👓 Mes lunettes" : "🚫 Rien";
+    return `<div class="wear-row"><b>${SPOT_SLOTS[slot]}</b><div class="row">${btn("none", rien, !cur)}${own.map((u) => btn(u.id, u.emoji + " " + esc(u.name), cur === u.id)).join("")}</div></div>`;
+  }).join("");
+  const nbMedals = MEDAILLES.filter((m) => medals[m.id]).length;
+  const medalCards = MEDAILLES.map((m) => `<div class="trophy ${medals[m.id] ? "" : "locked"}"><div class="big">${m.emoji}</div><b>${esc(medalName(m, p))}</b><div class="hint">${esc(m.desc)}</div></div>`).join("");
   return `${topbar()}
-    <div class="spot-stage">${spotSVG("happy")}<div class="bubble">Tu as ${p.progress.points} points et ${p.progress.history.length} missions réussies en tout !
+    <div class="spot-stage">${spotSVG("happy")}<div class="bubble">Tu as ${p.progress.points} points, ${p.progress.history.length} missions réussies et ${nbMedals} médaille${nbMedals > 1 ? "s" : ""} !
       ${next ? `<br>Encore ${toNext} points et je gagne : ${next.emoji} ${esc(next.name)}.` : "<br>Tu as TOUT débloqué, incroyable !"}</div></div>
+    ${wardrobe ? `<h2>La garde-robe de Spot 👕</h2><p class="hint">Choisis ce que Spot porte !</p><div class="wardrobe">${wardrobe}</div>` : ""}
+    <h2>Mes médailles 🏅</h2><p class="hint">Chaque médaille donne ${MEDAL_BONUS} points bonus.</p><div class="trophies">${medalCards}</div>
     <h2>Les accessoires de Spot</h2><div class="trophies">${items}</div>
     <div class="actions"><button data-action="go" data-screen="home">⬅️ Retour</button></div>`;
 }
@@ -374,7 +439,9 @@ function renderReward() {
     <div class="exercise reward">${spotSVG("party", "wiggle")}
       <h1>Mission réussie !</h1><div class="stars">${stars}</div><div class="points">+${r.points} points</div>
       ${r.chrono ? `<div class="unlock">⏱ Temps : <b>${r.chrono}</b>${r.record ? " 🏆 Nouveau record !" : ""}</div>` : ""}
-      ${r.unlock ? `<div class="unlock">🎁 Nouveau ! Spot a gagné : <b>${r.unlock.emoji} ${esc(r.unlock.name)}</b></div>` : ""}
+      ${(r.unlocks || []).map((u) => `<div class="unlock">🎁 Nouveau ! Spot a gagné : <b>${u.emoji} ${esc(u.name)}</b></div>`).join("")}
+      ${(r.medals || []).map((m) => `<div class="unlock medal">🏅 Nouvelle médaille : <b>${m.emoji} ${esc(medalName(m))}</b> · +${MEDAL_BONUS} points</div>`).join("")}
+      ${(r.unlocks || []).length || (r.medals || []).length ? `<div class="actions"><button class="ghost" data-action="go" data-screen="trophies">🏆 Voir mes trophées</button></div>` : ""}
       ${r.allDone ? `<div class="unlock">🏁 Toutes les missions du jour sont faites. Bravo !</div>` : ""}
       <div class="actions"><button class="big green" data-action="go" data-screen="home">Continuer ➡️</button></div></div>`;
 }
@@ -417,7 +484,7 @@ function parentCheck(label, id = "parentok") {
 function stepsBar(labels, current) {
   return `<div class="steps">${labels.map((l, i) => `<span class="${i < current ? "done" : i === current ? "active" : ""}">${l}</span>`).join("")}</div>`;
 }
-function afterAnswer(correct, expected, next) {
+function afterAnswer(correct, expected, next, spoken = expected) {
   if (correct) {
     ex.feedback = line("correct"); ex.feedbackKind = "ok"; say(ex.feedback); ex.locked = true;
     render();
@@ -426,7 +493,7 @@ function afterAnswer(correct, expected, next) {
     ex.tries++; ex.errors++;
     if (ex.tries >= 2) {
       ex.feedback = `La bonne réponse était : ${expected}`; ex.feedbackKind = "ko"; ex.locked = true; ex.showAnswer = true;
-      say("La bonne réponse était " + expected);
+      say("La bonne réponse : " + spoken);
       render();
       setTimeout(() => { ex.locked = false; ex.tries = 0; ex.feedback = ""; ex.feedbackKind = ""; ex.lastChoice = undefined; ex.showAnswer = false; next(); }, 2200);
     } else {
@@ -454,16 +521,57 @@ function finishTask(extra = {}) {
   }
   p.progress.history.push(hist);
   if (p.progress.history.length > 300) p.progress.history.splice(0, p.progress.history.length - 300);
-  const after = levelOf(p.progress.points);
-  const unlock = after > before ? SPOT_UNLOCKS.find((u) => u.level === after) : null;
   const allDone = (p.plan[view.day] || []).every((x) => p.progress.completed[x.id]);
+  // Compteurs pour les médailles (une journée complète ne compte qu'une fois)
+  p.progress.medals = p.progress.medals || {};
+  const st = p.progress.stats = p.progress.stats || {};
+  if (record) st.records = (st.records || 0) + 1;
+  const dayId = (p.progress.weekStart || "") + ":" + view.day;
+  if (allDone && st.lastFullDay !== dayId) { st.lastFullDay = dayId; st.fullDays = (st.fullDays || 0) + 1; if (view.day === "dimanche") st.sundays = (st.sundays || 0) + 1; }
+  const medals = newMedals(p);
+  p.spot.wear = p.spot.wear || {};
+  for (const m of medals) {
+    p.progress.medals[m.id] = new Date().toISOString(); p.progress.points += MEDAL_BONUS;
+    const acc = SPOT_UNLOCKS.find((u) => u.medal === m.id); if (acc) p.spot.wear[acc.slot] = acc.id;
+  }
+  const after = levelOf(p.progress.points);
+  // Nouveaux accessoires : Spot les met tout de suite
+  const unlocks = SPOT_UNLOCKS.filter((u) => u.level > before && u.level <= after);
+  for (const u of unlocks) if (u.slot) p.spot.wear[u.slot] = u.id;
   save();
-  view.reward = { stars, points, unlock, allDone, chrono: extra.seconds != null ? fmtTime(extra.seconds) : "", record };
+  view.reward = { stars, points, unlocks, medals, allDone, chrono: extra.seconds != null ? fmtTime(extra.seconds) : "", record };
   view.screen = "reward";
   render();
-  confetti(allDone ? 160 : 80);
-  say(line("taskDone", { points }) + (unlock ? " Et j'ai gagné " + unlock.name + " !" : "") + (allDone ? " " + line("allDone") : ""), false, { bipKind: "win" });
+  confetti(allDone || medals.length ? 160 : 80);
+  say(line("taskDone", { points }) + (unlocks.length ? " Et j'ai gagné " + unlocks.map((u) => u.name).join(" et ") + " !" : "")
+    + (medals.length ? (medals.length === 1 ? " Nouvelle médaille : " + medalName(medals[0], p) + " !" : ` ${medals.length} nouvelles médailles !`) : "")
+    + (allDone ? " " + line("allDone") : ""), false, { bipKind: "win" });
 }
+// ---------- Médailles ----------
+function dayKey(d) { d = new Date(d); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function streakDays(p) {
+  const days = new Set(p.progress.history.map((h) => dayKey(h.date)));
+  let n = 0; const d = new Date();
+  while (days.has(dayKey(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+const MEDAL_TESTS = {
+  premiere: (p) => p.progress.history.length >= 1,
+  m10: (p) => p.progress.history.length >= 10,
+  m25: (p) => p.progress.history.length >= 25,
+  m50: (p) => p.progress.history.length >= 50,
+  m100: (p) => p.progress.history.length >= 100,
+  etoiles10: (p) => p.progress.history.filter((h) => h.stars === 3).length >= 10,
+  journee: (p, st) => (st.fullDays || 0) >= 1,
+  journees5: (p, st) => (st.fullDays || 0) >= 5,
+  dimanche: (p, st) => (st.sundays || 0) >= 1,
+  serie3: (p) => streakDays(p) >= 3,
+  serie7: (p) => streakDays(p) >= 7,
+  eclair: (p, st) => (st.records || 0) >= 1,
+  halloween: () => { const d = new Date(); return (d.getMonth() === 9 && d.getDate() >= 24) || (d.getMonth() === 10 && d.getDate() === 1); },
+};
+function newMedals(p) { return MEDAILLES.filter((m) => !p.progress.medals[m.id] && MEDAL_TESTS[m.id] && MEDAL_TESTS[m.id](p, p.progress.stats)); }
+function medalName(m, p = P()) { return G(m.name, m.nameF || m.name, p); }
 function fmtTime(s) { return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
 function listenRound(prompt, choices, cls = "") {
   const btns = choices.map((c, i) => {
@@ -499,8 +607,26 @@ function genCalc(t) {
       case "plus10": { const plus = Math.random() < 0.5 || a < 10; it = plus ? { text: `${a} + 10 = ?`, answer: a + 10 } : { text: `${a} − 10 = ?`, answer: a - 10 }; break; }
       case "doubles": it = { text: `${a} + ${a} = ?`, answer: a + a }; break;
       case "manquant": it = Math.random() < 0.5 ? { text: `${a} + ? = ${a + b}`, answer: b } : { text: `${a + b} − ? = ${a}`, answer: b }; break;
-      case "comparer": { const r = a < b ? "<" : a > b ? ">" : "="; it = { text: `${fmtNum(a)}  ?  ${fmtNum(b)}`, answer: r, choices: ["<", ">", "="] }; break; }
-      case "grands+": it = { text: `${fmtNum(a)} + ${fmtNum(b)} = ?`, answer: a + b, vertical: [a, b, "+"] }; break;
+      case "comparer": {
+        const r = a < b ? "<" : a > b ? ">" : "=";
+        const mot = { "<": "plus petit que", ">": "plus grand que", "=": "égal à" }[r];
+        it = { text: `${fmtNum(a)}  ?  ${fmtNum(b)}`, answer: r, choices: ["<", ">", "="],
+          speak: `${a}, est-il plus petit, plus grand ou égal à ${b} ?`, full: `${fmtNum(a)} ${r} ${fmtNum(b)}`, fullSpoken: `${a} est ${mot} ${b}` };
+        break;
+      }
+      case "groupes2": {
+        // Une fois sur deux : compter des objets rangés par 2 ; sinon, compter par bonds de 2
+        if (Math.random() < 0.5) {
+          const n = Math.max(2, rnd(Math.max(2, min), Math.max(2, max))), obj = pick(["🍎", "⭐", "🐞", "🚗", "🧦", "🍪", "🎈", "🐟"]);
+          const groupes = Array.from({ length: Math.floor(n / 2) }, () => obj + obj).concat(n % 2 ? [obj] : []);
+          it = { text: groupes.join("   "), answer: n, objets: true, speak: "Combien y en a-t-il ? Compte par groupes de 2." };
+        } else {
+          const s = 2 * rnd(0, Math.max(0, Math.floor(max / 2) - 3));
+          it = { text: `${s}, ${s + 2}, ${s + 4}, ?`, answer: s + 6, speak: `Compte par bonds de 2 : ${s}, ${s + 2}, ${s + 4}, et ensuite ?` };
+        }
+        break;
+      }
+      case "grands+": it ={ text: `${fmtNum(a)} + ${fmtNum(b)} = ?`, answer: a + b, vertical: [a, b, "+"] }; break;
       case "grands-": if (b > a) [a, b] = [b, a]; it = { text: `${fmtNum(a)} − ${fmtNum(b)} = ?`, answer: a - b, vertical: [a, b, "−"] }; break;
       default: it = { text: `${a} + ${b} = ?`, answer: a + b };
     }
@@ -519,9 +645,9 @@ function exCalcul() {
   }
   const q = item.vertical
     ? `<div class="vertical"><div>${fmtNum(item.vertical[0])}</div><div>${item.vertical[2]} ${fmtNum(item.vertical[1])}</div><div class="bar">?</div></div>`
-    : `<div class="question">${esc(item.text)}</div>`;
+    : `<div class="question${item.objets ? " objets" : ""}">${esc(item.text)}</div>${item.objets ? `<div class="hint" style="text-align:center">Combien y en a-t-il ? Compte par groupes de 2 !</div>` : ""}`;
   return `<div class="counter">Question ${ex.step + 1} / ${ex.items.length}</div>${q}
-    <div class="actions" style="margin:0 0 8px"><button class="ghost small" data-action="say" data-text="${esc(item.text.replace("−", "moins").replace("×", "fois").replace("?", "combien"))}">🔊 Écouter</button></div>
+    <div class="actions" style="margin:0 0 8px"><button class="ghost small" data-action="say" data-text="${esc(item.speak || item.text.replace("?", "combien"))}">🔊 Écouter</button></div>
     ${answerUI}${feedbackHTML()}`;
 }
 function nextCalcul() { ex.step++; if (ex.step >= ex.items.length) finishTask(); else render(); }
@@ -910,7 +1036,7 @@ function handleChoice(i) {
   if (ex.locked) return;
   const t = view.task.type; ex.lastChoice = i;
   if (t === "quiz") { const q = ex.items[ex.step]; afterAnswer(i === Number(q.answer), q.choices[q.answer], nextQuiz); return; }
-  if (t === "calcul") { const it = ex.items[ex.step]; afterAnswer(it.choices[i] === it.answer, it.answer, nextCalcul); return; }
+  if (t === "calcul") { const it = ex.items[ex.step]; afterAnswer(it.choices[i] === it.answer, it.full || it.answer, nextCalcul, it.fullSpoken || it.answer); return; }
   if (t === "spatial") { afterAnswer(ex.choices[i] === ex.rel, SPATIAL_POS[ex.rel].label, nextSpatial); return; }
   afterAnswer(normalize(ex.choices[i]) === normalize(ex.target), ex.target, nextForType());
 }
@@ -1170,7 +1296,10 @@ function parentSettings(p) {
       <div><label>Couleur du corps</label><input type="color" name="body" value="${esc(p.spot.body || "#5b8def")}" style="height:46px"></div>
       <div><label>Lunettes</label><select name="lunettes"><option value="" ${!p.spot.lunettes ? "selected" : ""}>Aucune</option>${opt(["#8b5cf6", "#ec4899", "#ef4444", "#22c55e", "#f59e0b", "#111111"], p.spot.lunettes, (c) => [c, { "#8b5cf6": "Mauves", "#ec4899": "Roses", "#ef4444": "Rouges", "#22c55e": "Vertes", "#f59e0b": "Jaunes", "#111111": "Noires" }[c]])}</select></div>
     </div>
-    <div class="sep"></div><h3>La voix de Spot 🎙️</h3>${voiceSettingsHTML(s)}
+    <div class="sep"></div><h3>La voix de Spot 🎙️</h3>
+    <div class="form-grid"><div><label>Prononciation du prénom</label><input name="sayName" value="${esc(p.sayName || "")}" placeholder="${esc(p.name)}">
+      <div class="hint">Si la voix prononce mal le prénom, écris-le comme il se prononce (ex. : « Charle » ou « Charl »), puis clique « Essayer cette voix ». Vide = le prénom tel quel.</div></div></div>
+    ${voiceSettingsHTML(s)}
     <div class="actions" style="justify-content:flex-start"><button type="submit" class="green">💾 Enregistrer</button><button type="button" class="accent" data-action="voice-test">🔊 Essayer cette voix</button></div></form>
   <div class="sep"></div><h3>Synchronisation entre appareils ☁️</h3>
   <p class="hint">${esc(syncStatusLabel())}</p>
@@ -1197,6 +1326,11 @@ document.addEventListener("click", (e) => {
   if (a === "say") { say(el.dataset.text, true); return; }
   if (a === "say-sound") { saySound(el.dataset.s); return; }
   if (a === "start") { startTask(el.dataset.task); return; }
+  if (a === "wear") {
+    const k = P(); k.spot.wear = k.spot.wear || {}; k.spot.wear[el.dataset.slot] = el.dataset.id; save(); render();
+    say(el.dataset.id === "none" ? "Hop, j'enlève ça !" : pick(["Hop ! Comment tu me trouves ?", "Wouah, j'adore !", "Bip bip, trop chic !"]));
+    return;
+  }
   if (!ex && ["hide-word", "choice", "tile", "cell", "zone", "timer-start", "timer-pause", "finish", "son-next", "tempete-ok", "tempete-retry", "etiq-next", "calli-next", "canvas-clear", "conj-go"].includes(a)) return;
 
   if (a === "hide-word") { ex.phase = "type"; render(); return; }
@@ -1249,12 +1383,13 @@ document.addEventListener("click", (e) => {
   if (a === "save-to-lib") { const d = readForm(el.closest("form")); const err = validateTask(d); if (err) { alert(err); return; } const c = cleanTask(d, p.grade); delete c.id; p.library.push(c); save(); alert("Ajouté à la banque !"); return; }
   if (a === "lib-del") { p.library.splice(Number(el.dataset.index), 1); save(); render(); return; }
   if (a === "reset-week") { if (confirm(`Remettre toutes les missions de la semaine de ${p.name} à « non faites » ?`)) { p.progress.completed = {}; save(); render(); } return; }
-  if (a === "reset-progress") { if (confirm(`Remettre les points, le niveau et l'historique de ${p.name} à zéro ?`)) { p.progress = { points: 0, completed: {}, weekStart: mondayOf(new Date()), history: [] }; save(); render(); } return; }
+  if (a === "reset-progress") { if (confirm(`Remettre les points, le niveau et l'historique de ${p.name} à zéro ?`)) { p.progress = { points: 0, completed: {}, weekStart: mondayOf(new Date()), history: [], medals: {}, stats: {} }; save(); render(); } return; }
   if (a === "reset-profile") { if (confirm(`Effacer le plan et la banque de ${p.name} et revenir au plan d'étude par défaut ? (les points restent)`)) { const d = DEFAULT_PROFILES()[p.id]; p.plan = d.plan; p.library = d.library; p.planEdition = d.planEdition; p.progress.completed = {}; save(); render(); } return; }
   if (a === "voice-test") {
     const f = new FormData(el.closest("form"));
-    say(`Salut ${p.name} ! Je suis Spot, ton robot. Bip bip ! On fait nos missions ensemble ?`, false,
-      { voiceName: f.get("voiceName") || "", pitch: Number(f.get("pitch")), rate: Number(f.get("rate")), bips: f.get("bips") === "1", voice: true });
+    const nom = String(f.get("sayName") || "").trim() || p.name;
+    say(`Salut ${nom} ! Je suis Spot, ton robot. Bip bip ! On fait nos missions ensemble ?`, false,
+      { voiceName: f.get("voiceName") || "", pitch: Number(f.get("pitch")), rate: Number(f.get("rate")), bips: f.get("bips") === "1", voice: true, keepNames: true });
     return;
   }
   if (a === "change-family") { if (confirm("Changer le code famille sur cet appareil ? Les données du nouveau code remplaceront l'affichage ici.")) syncForget(); return; }
@@ -1306,6 +1441,7 @@ document.addEventListener("submit", (e) => {
     const f = new FormData(form);
     p.name = (f.get("childName") || p.name).trim() || p.name;
     p.gender = f.get("gender") === "f" ? "f" : "m";
+    p.sayName = String(f.get("sayName") || "").trim();
     const pin = (f.get("pin") || "").trim(); if (/^\d{4}$/.test(pin)) state.pin = pin;
     p.settings.pointsPerTask = Number(f.get("pointsPerTask")) || 10;
     p.settings.voice = f.get("voice") === "1";
