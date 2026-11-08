@@ -8,6 +8,9 @@
 const FAMILY_KEY = "spot-famille";
 let syncDb = null, syncRef = null, syncLastSent = "", syncTimer = null;
 let syncStatus = "off"; // off | nocode | connecting | on | error
+// Tant que la sauvegarde de la famille n'a pas été lue, un nouvel appareil n'envoie rien :
+// sinon ses données vides pourraient écraser la progression des enfants.
+let syncReady = false;
 
 function syncAvailable() { return typeof FIREBASE_CONFIG !== "undefined" && FIREBASE_CONFIG && window.firebase; }
 function familyCode() { try { return localStorage.getItem(FAMILY_KEY) || ""; } catch (e) { return ""; } }
@@ -28,11 +31,15 @@ function syncInit() {
 function stateForSync() { const s = Object.assign({}, state); delete s.current; return JSON.stringify(s); }
 
 function syncAttach(code) {
-  syncStatus = "connecting";
+  syncStatus = "connecting"; syncReady = false;
   syncRef = syncDb.collection("familles").doc(code);
-  syncRef.onSnapshot((doc) => {
-    if (!doc.exists) { syncSave(true); syncStatus = "on"; return; }
-    syncStatus = "on";
+  syncRef.onSnapshot({ includeMetadataChanges: true }, (doc) => {
+    if (!doc.exists) {
+      // « Absente » d'après le cache seulement (appareil hors ligne) : on attend la réponse du serveur
+      if (doc.metadata.fromCache) return;
+      syncReady = true; syncSave(true); syncStatus = "on"; return;
+    }
+    syncReady = true; syncStatus = "on";
     const remote = doc.data().etat;
     if (!remote || remote === syncLastSent) return;
     syncLastSent = remote;
@@ -49,7 +56,7 @@ function syncAttach(code) {
 
 // Appelé par save() dans app.js
 function syncSave(immediate = false) {
-  if (!syncRef) return;
+  if (!syncRef || !syncReady) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     const json = stateForSync();

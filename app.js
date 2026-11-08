@@ -916,9 +916,23 @@ function tempeteNext(ok) {
   if (ex.pile.length === 0) { finishTask(); return; }
   render();
 }
+// Mots-étiquettes ratés : Spot les garde en mémoire et les ramène plus souvent
+function noteEtiquette(w, firstTry) {
+  const miss = P().progress.etiqMiss = P().progress.etiqMiss || {};
+  if (firstTry) { if (miss[w]) { miss[w]--; if (!miss[w]) delete miss[w]; } }
+  else if (ex.tries === 0) miss[w] = Math.min(5, (miss[w] || 0) + 2);
+}
 function startEtiquettes(t) {
-  ex.words = (t.words || []).slice(); ex.phase = "photo"; ex.step = 0; ex.order = shuffle(ex.words);
-  ex.pool = ex.words.length >= 4 ? ex.words : ex.words.concat(Object.values(ETIQUETTES).flat());
+  const all = (t.words || []).slice();
+  // count : on ne travaille qu'une partie des mots, en commençant par ceux qui ne sont pas encore reconnus
+  if (t.count && all.length > t.count) {
+    const miss = P().progress.etiqMiss || {};
+    const ratés = shuffle(all.filter((w) => miss[w])).sort((a, b) => miss[b] - miss[a]);
+    const autres = shuffle(all.filter((w) => !miss[w]));
+    ex.words = ratés.slice(0, Math.ceil(t.count * 0.6)).concat(autres).concat(ratés.slice(Math.ceil(t.count * 0.6))).slice(0, t.count);
+  } else ex.words = all;
+  ex.phase = "photo"; ex.step = 0; ex.order = shuffle(ex.words);
+  ex.pool = all.length >= 4 ? all : all.concat(Object.values(ETIQUETTES).flat());
 }
 function exEtiquettes() {
   const head = stepsBar(["Le photographe", "La pêche"], ex.phase === "photo" ? 0 : 1);
@@ -1038,7 +1052,9 @@ function handleChoice(i) {
   if (t === "quiz") { const q = ex.items[ex.step]; afterAnswer(i === Number(q.answer), q.choices[q.answer], nextQuiz); return; }
   if (t === "calcul") { const it = ex.items[ex.step]; afterAnswer(it.choices[i] === it.answer, it.full || it.answer, nextCalcul, it.fullSpoken || it.answer); return; }
   if (t === "spatial") { afterAnswer(ex.choices[i] === ex.rel, SPATIAL_POS[ex.rel].label, nextSpatial); return; }
-  afterAnswer(normalize(ex.choices[i]) === normalize(ex.target), ex.target, nextForType());
+  const ok = normalize(ex.choices[i]) === normalize(ex.target);
+  if (t === "etiquettes") noteEtiquette(ex.target, ok && ex.tries === 0);
+  afterAnswer(ok, ex.target, nextForType());
 }
 function handleTyped(raw) {
   if (ex.locked) return;
@@ -1231,7 +1247,7 @@ function readForm(form) {
   }
   return d;
 }
-const KEEP = { lecture: ["instructions", "minutes"], tache: ["instructions"], son: ["son"], tempete: ["rose", "bleu", "jaune"], etiquettes: ["groupe", "words"],
+const KEEP = { lecture: ["instructions", "minutes"], tache: ["instructions"], son: ["son"], tempete: ["rose", "bleu", "jaune"], etiquettes: ["groupe", "words", "count"],
   calligraphie: ["lettre"], mots: ["bloc", "liste", "words", "mode", "count"], grille: ["max", "count"], spatial: ["count"], tables: ["op", "table", "count", "chrono"],
   nombres: ["max", "count"], conjug: ["verbe", "temps"], calcul: ["op", "min", "max", "count"], quiz: ["questions"] };
 function cleanTask(d, grade) {
