@@ -85,40 +85,41 @@ const copy = (o) => JSON.parse(JSON.stringify(o));
 const rev = (o, extra = {}) => Object.assign(copy(o), { title: "Révision : " + o.title }, extra);
 
 // ------------------------------------------------------------
-//  CHARLES — 1re année (plan d'étude semaine 10, 9 novembre)
+//  CHARLES — 1re année (plan d'étude semaine 11, 16 novembre)
 //  Dimanche : tout le plan (pages des cahiers comprises).
-//  Lundi à vendredi : petits livres + révisions.
+//  Lundi à mercredi : petits livres + révisions.
+//  Jeudi 19 et vendredi 20 : journées pédagogiques, missions légères.
 // ------------------------------------------------------------
 function buildCharles() {
   const LIVRES = { type: "lecture", subject: "Français", emoji: "📗", title: "Petits livres (reliure verte)",
     instructions: "Je lis, avec l'aide de mon parent, les petits livres qui sont dans mon sac de lecture. Mon parent signe la section « Signatures » de ma reliure verte.", minutes: 10 };
   const TEMPETE = { type: "tempete", subject: "Français", emoji: "🌪️", title: "Tempête de sons", rose: TEMPETE_DEFAUT.rose, bleu: TEMPETE_DEFAUT.bleu, jaune: TEMPETE_DEFAUT.jaune };
-  // « Je révise tous les mots-étiquettes appris » : 12 mots par séance, en priorité ceux qu'il ne reconnaît pas encore
+  const GRILLE49 = { type: "grille", subject: "Maths", emoji: "🔢", title: "Je reconnais les nombres de 0 à 49 (cahier blanc p. 7)", max: 49, count: 8 };
+  const LIGNES = Object.assign({ type: "quiz" }, copy(QUIZ_LIGNES_FIGURES));
+  const SON_B = { type: "son", subject: "Français", emoji: "🔊", title: "Le son b", son: "b" };
+  const SON_AN = { type: "son", subject: "Français", emoji: "🔊", title: "Le son an", son: "an" };
+  const CALLI_T = { type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre t (page 17)", lettre: "t" };
+  const CALLI_C = { type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre c (page 18)", lettre: "c" };
+  // Pas de mots-étiquettes dans ce plan ; on garde une petite révision pendant les journées pédagogiques
   const ETIQ_TOUS = { type: "etiquettes", subject: "Français", emoji: "🏷️", title: "Tous mes mots-étiquettes (12 mots, surtout ceux à pratiquer)",
     groupe: "A à H", words: Object.values(ETIQUETTES).flat(), count: 12 };
-  const GRILLE39 = { type: "grille", subject: "Maths", emoji: "🔢", title: "Les nombres de 0 à 39 : les 4 premières rangées de la grille (cahier blanc p. 2)", max: 39, count: 8 };
-  const ADDITION = { type: "calcul", subject: "Maths", emoji: "➕", title: "L'addition (Numérik p. 9)", op: "+", min: 0, max: 5, count: 8 };
-  const SOUSTRACTION = { type: "calcul", subject: "Maths", emoji: "➖", title: "La soustraction (Numérik p. 9)", op: "-", min: 0, max: 10, count: 8 };
-  const SON_P = { type: "son", subject: "Français", emoji: "🔊", title: "Le son p", son: "p" };
-  const SON_ON = { type: "son", subject: "Français", emoji: "🔊", title: "Le son on", son: "on" };
-  const CALLI_B = { type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre b (page 15)", lettre: "b" };
-  const CALLI_D = { type: "calligraphie", subject: "Français", emoji: "✍️", title: "Calligraphie : la lettre d (page 16)", lettre: "d" };
-  const BOITE = { type: "tache", subject: "Premier devoir", emoji: "🧰", title: "Ma boîte aux trésors est prête pour demain",
-    instructions: "Demain lundi, j'apporte ma boîte aux trésors à l'école avec ses 5 objets à l'intérieur. Je vérifie avec mon parent qu'il ne manque rien et je la mets près de mon sac." };
 
   const plan = {
-    lundi: [T(copy(LIVRES)), T(rev(SON_P)), T(rev(ETIQ_TOUS)), T(rev(ADDITION))],
-    mardi: [T(copy(LIVRES)), T(rev(TEMPETE)), T(rev(SON_ON)), T(rev(GRILLE39))],
-    mercredi: [T(copy(LIVRES)), T(rev(ETIQ_TOUS)), T(rev(SOUSTRACTION)), T(rev(SON_P))],
-    jeudi: [T(copy(LIVRES)), T(rev(TEMPETE)), T(rev(SON_ON)), T(rev(ADDITION))],
-    vendredi: [T(copy(LIVRES)), T(rev(ETIQ_TOUS)),
-      T({ type: "tache", subject: "Organisation", emoji: "🎒", title: "Préparer mon sac pour lundi", instructions: "Je mets dans mon sac mes livres de bibliothèque, mon sac de lecture et ma reliure verte signée, mon cartable Maison et ma boîte à lunch." })],
+    lundi: [T(copy(LIVRES)), T(rev(SON_B)), T(rev(TEMPETE)), T(rev(GRILLE49))],
+    mardi: [T(copy(LIVRES)), T(rev(SON_AN)), T(rev(LIGNES, { title: "Révision : les lignes et les figures planes" }))],
+    mercredi: [T(copy(LIVRES)), T(rev(TEMPETE)), T(rev(SON_B)), T(rev(GRILLE49))],
+    jeudi: [T(copy(LIVRES)), T(rev(SON_AN)), T(rev(LIGNES, { title: "Révision : les lignes et les figures planes" })), T(copy(ETIQ_TOUS))],
+    vendredi: [T(copy(LIVRES)), T(rev(TEMPETE)),
+      T({ type: "tache", subject: "Organisation", emoji: "🎒", title: "Préparer mon sac pour lundi", instructions: "Pas d'école aujourd'hui (journée pédagogique). Je mets dans mon sac mes livres de bibliothèque, mon sac de lecture et ma reliure verte signée, mon cartable Maison et ma boîte à lunch." })],
     samedi: [],
-    dimanche: [T(copy(LIVRES)), T(copy(SON_P)), T(copy(SON_ON)), T(copy(TEMPETE)), T(copy(ETIQ_TOUS)),
-      T(copy(CALLI_B)), T(copy(CALLI_D)), T(copy(ADDITION)), T(copy(SOUSTRACTION)), T(copy(GRILLE39)), T(copy(BOITE))],
+    dimanche: [T(copy(LIVRES)), T(copy(SON_B)), T(copy(SON_AN)), T(copy(TEMPETE)),
+      T(copy(CALLI_T)), T(copy(CALLI_C)), T(copy(LIGNES)), T(copy(GRILLE49))],
   };
   const library = [
-    copy(LIVRES), copy(TEMPETE), copy(GRILLE39), copy(ETIQ_TOUS), copy(ADDITION), copy(SOUSTRACTION),
+    copy(LIVRES), copy(TEMPETE), copy(GRILLE49), copy(LIGNES), copy(ETIQ_TOUS),
+    { type: "grille", subject: "Maths", emoji: "🔢", title: "Les nombres de 0 à 39 : les 4 premières rangées de la grille (cahier blanc p. 2)", max: 39, count: 8 },
+    { type: "calcul", subject: "Maths", emoji: "➕", title: "L'addition (Numérik p. 9)", op: "+", min: 0, max: 5, count: 8 },
+    { type: "calcul", subject: "Maths", emoji: "➖", title: "La soustraction (Numérik p. 9)", op: "-", min: 0, max: 10, count: 8 },
     { type: "calcul", subject: "Maths", emoji: "👟", title: "Dénombrer avec des groupes de 2 (Numérik p. 9)", op: "groupes2", min: 0, max: 20, count: 8 },
     { type: "grille", subject: "Maths", emoji: "🔢", title: "Les nombres de 0 à 29 : les 3 premières rangées de la grille (cahier blanc p. 2)", max: 29, count: 8 },
     { type: "etiquettes", subject: "Français", emoji: "🏷️", title: "Mots-étiquettes G (page 8)", groupe: "G", words: ETIQUETTES.G },
@@ -135,7 +136,7 @@ function buildCharles() {
   ].concat(QUIZ_MATHS.map((q) => Object.assign({ type: "quiz" }, q)));
 
   return {
-    id: "charles", name: "Charles", grade: 1, gradeLabel: "1re année", gender: "m", sayName: "Charle", planEdition: "2026-11-09",
+    id: "charles", name: "Charles", grade: 1, gradeLabel: "1re année", gender: "m", sayName: "Charle", planEdition: "2026-11-16",
     spot: { body: "#5b8def", lunettes: "" },
     settings: copy(BASE_SETTINGS), plan, library,
     progress: { points: 0, completed: {}, weekStart: null, history: [], medals: {}, stats: {} },
@@ -143,44 +144,52 @@ function buildCharles() {
 }
 
 // ------------------------------------------------------------
-//  CLARA — 3e année (plan d'étude des semaines du 3 au 14 novembre ; ici, la semaine du 9)
+//  CLARA — 3e année (plan d'étude des semaines du 16 au 27 novembre ; ici, la semaine du 16)
 //  Dimanche : tout le plan. Lundi à vendredi : lecture + révisions.
+//  Évaluations : sciences le 16, plan cartésien le 18, révision de l'étape 1 le 25.
+//  Jeudi 19 et vendredi 20 : journées pédagogiques.
 // ------------------------------------------------------------
 function buildClara() {
   const LECTURE = { type: "lecture", subject: "Français", emoji: "📚", title: "Lecture : 15 minutes du livre de mon choix",
     instructions: "Je lis 15 minutes dans le livre de mon choix. Je peux raconter à Spot ou à un parent ce que j'ai lu.", minutes: 15 };
-  const LECTURE_EVAL = Object.assign(copy(LECTURE), { title: "Lecture : 15 minutes (évaluation de lecture demain !)",
-    instructions: "Demain, mercredi 11 novembre, j'ai une évaluation de lecture. Je lis 15 minutes, puis je raconte l'histoire à un parent : les personnages, le problème et la fin." });
   const voir = (v) => Object.assign(copy(v), { title: v.title + " (voir puis écrire)", mode: "voir" });
-  const L15 = C3_LISTES.find((l) => l.key === "1.5");
-  const VOCAB = { type: "mots", subject: "Vocabulaire", emoji: "🏠", title: "Liste 1.5 : La maison de Rosie", liste: "1.5", words: L15.mots, mode: "dicter" };
-  const AIMER = { type: "conjug", subject: "Conjugaison", emoji: "🔤", title: "Conjuguer AIMER au présent (cahier d'étude p. 26)", verbe: "aimer", temps: "present" };
-  const FINIR = { type: "conjug", subject: "Conjugaison", emoji: "🔤", title: "Conjuguer FINIR au présent (cahier d'étude p. 27)", verbe: "finir", temps: "present" };
-  const ADD6 = { type: "tables", subject: "Maths", emoji: "➕", title: "Additions du 6 (Tam Tam p. 59)", op: "+", table: 6, count: 12, chrono: true };
+  const L16 = C3_LISTES.find((l) => l.key === "1.6");
+  const VOCAB = { type: "mots", subject: "Vocabulaire", emoji: "🏆", title: "Liste 1.6 : Monsieur Champion", liste: "1.6", words: L16.mots, mode: "dicter" };
+  const AVOIR = { type: "conjug", subject: "Conjugaison", emoji: "🔤", title: "Conjuguer AVOIR au présent (cahier d'étude p. 27)", verbe: "avoir", temps: "present" };
+  const ETRE = { type: "conjug", subject: "Conjugaison", emoji: "🔤", title: "Conjuguer ÊTRE au présent (cahier d'étude p. 27)", verbe: "être", temps: "present" };
   const ADD7 = { type: "tables", subject: "Maths", emoji: "➕", title: "Additions du 7 (Tam Tam p. 59)", op: "+", table: 7, count: 12, chrono: true };
-  const NOMBRES = { type: "nombres", subject: "Maths", emoji: "🔢", title: "Lecture des nombres 0 à 750 (grille 1, page 3)", max: 750, count: 8 };
-  const SIGNATURE_NOMBRES = { type: "tache", subject: "Maths", emoji: "✍️", title: "Lire la grille 1 (page 3) à un parent et la faire signer",
-    instructions: "Je lis à voix haute les nombres de la grille 1, de 0 à 750 (page 3 du cartable Maison), à un parent, qui signe la page." };
-  const GRAMMAIRE = { type: "tache", subject: "Grammaire", emoji: "📖", title: "Révision des pages 14 à 16 du cahier de grammaire", instructions: "Je relis les pages 14, 15 et 16 de mon cahier de grammaire." };
-  const TAMTAM = { type: "tache", subject: "Maths", emoji: "📘", title: "Révision des pages 15 à 17 des savoirs Tam Tam", instructions: "Je relis les pages 15, 16 et 17 de mes savoirs Tam Tam." };
-  const SCIENCES = { type: "tache", subject: "Sciences", emoji: "🔬", title: "Sciences : la leçon 3", instructions: "Je relis la leçon 3 et j'explique à un parent ce que j'ai retenu. Évaluation la semaine du 16 novembre." };
+  const ADD8 = { type: "tables", subject: "Maths", emoji: "➕", title: "Additions du 8 (Tam Tam p. 59)", op: "+", table: 8, count: 12, chrono: true };
+  const NOMBRES = { type: "nombres", subject: "Maths", emoji: "🔢", title: "Lecture des nombres 0 à 750 (grille 2, page 3)", max: 750, count: 8 };
+  const SIGNATURE_NOMBRES = { type: "tache", subject: "Maths", emoji: "✍️", title: "Lire la grille 2 (page 3) à un parent et la faire signer",
+    instructions: "Je lis à voix haute les nombres de la grille 2, de 0 à 750 (page 3 du cartable Maison), à un parent, qui signe la page." };
+  const GRAMMAIRE = { type: "tache", subject: "Grammaire", emoji: "📖", title: "Lire les pages 14 à 16 du cahier de grammaire", instructions: "Je lis uniquement les pages 14, 15 et 16 de mon cahier de grammaire." };
+  const TAMTAM = { type: "tache", subject: "Maths", emoji: "📘", title: "Lire les pages 17 à 19 des savoirs Tam Tam", instructions: "Je lis les pages 17, 18 et 19 de mes savoirs Tam Tam." };
+  const quiz = (debut) => Object.assign({ type: "quiz" }, copy(C3_QUIZ_MATHS.find((q) => q.title.startsWith(debut))));
+  const CARTESIEN = quiz("Quiz : le plan cartésien");
+  const ETAPE1_A = quiz("Quiz : la valeur de position"), ETAPE1_B = quiz("Quiz : les opérations"), ETAPE1_C = quiz("Quiz : les figures");
 
   const plan = {
-    lundi: [T(copy(LECTURE)), T(rev(VOCAB)), T(rev(AIMER)), T(rev(ADD6))],
-    mardi: [T(copy(LECTURE_EVAL)), T(rev(FINIR)), T(rev(NOMBRES)), T(rev(ADD7))],
-    mercredi: [T(copy(LECTURE)), T(rev(VOCAB)), T(rev(ADD6)),
-      T(rev(SCIENCES, { instructions: "Je redis à un parent ce que je retiens de la leçon 3 de sciences." }))],
-    jeudi: [T(copy(LECTURE)), T(rev(AIMER)), T(rev(FINIR)), T(rev(NOMBRES)), T(rev(ADD7))],
-    vendredi: [T(copy(LECTURE)), T(rev(VOCAB)), T(rev(ADD6)),
-      T(rev(SCIENCES, { instructions: "Évaluation de sciences la semaine prochaine : je redis à un parent ce que je retiens de la leçon 3." }))],
+    lundi: [T(copy(LECTURE)), T(rev(VOCAB)), T(rev(AVOIR)), T(rev(ADD7)),
+      T(rev(CARTESIEN, { title: "Révision : le plan cartésien (évaluation mercredi)" }))],
+    mardi: [T(copy(LECTURE)), T(rev(ETRE)), T(rev(NOMBRES)), T(rev(ADD8)),
+      T(rev(CARTESIEN, { title: "Révision : le plan cartésien (évaluation demain !)" }))],
+    mercredi: [T(copy(LECTURE)), T(rev(VOCAB)), T(rev(ADD7)), T(rev(AVOIR))],
+    jeudi: [T(copy(LECTURE)), T(rev(ETRE)), T(rev(ADD8)), T(rev(ETAPE1_A, { title: "Révision de l'étape 1 : la valeur de position (évaluation le 25)" }))],
+    vendredi: [T(copy(LECTURE)), T(rev(VOCAB)), T(rev(NOMBRES)), T(rev(ETAPE1_B, { title: "Révision de l'étape 1 : les opérations (évaluation le 25)" }))],
     samedi: [],
-    dimanche: [T(copy(LECTURE)), T(voir(VOCAB)), T(copy(AIMER)), T(copy(FINIR)), T(copy(ADD6)), T(copy(ADD7)),
-      T(copy(NOMBRES)), T(copy(SIGNATURE_NOMBRES)), T(copy(GRAMMAIRE)), T(copy(TAMTAM)), T(copy(SCIENCES)),
-      T({ type: "tache", subject: "Organisation", emoji: "✍️", title: "Correction et signature du bingo d'Halloween", instructions: "Je corrige mon bingo d'Halloween du 30 octobre et je le fais signer par un parent." })],
+    dimanche: [T(copy(LECTURE)), T(voir(VOCAB)), T(copy(AVOIR)), T(copy(ETRE)), T(copy(ADD7)), T(copy(ADD8)),
+      T(copy(NOMBRES)), T(copy(SIGNATURE_NOMBRES)), T(copy(GRAMMAIRE)), T(copy(TAMTAM)),
+      T({ type: "tache", subject: "Sciences", emoji: "🔬", title: "Sciences : l'unité 3 (évaluation demain !)", instructions: "Demain, lundi 16 novembre, j'ai mon évaluation de sciences. Je relis l'unité 3 et j'explique à un parent ce que j'ai retenu." }),
+      T({ type: "tache", subject: "Organisation", emoji: "✍️", title: "Correction et signature du contrôle du 13 novembre", instructions: "Je corrige mon contrôle du 13 novembre et je le fais signer par un parent." })],
   };
   const L14 = C3_LISTES.find((l) => l.key === "1.4");
+  const L15 = C3_LISTES.find((l) => l.key === "1.5");
   const library = [
-    copy(LECTURE), copy(VOCAB), copy(AIMER), copy(FINIR), copy(ADD6), copy(ADD7), copy(NOMBRES),
+    copy(LECTURE), copy(VOCAB), copy(AVOIR), copy(ETRE), copy(ADD7), copy(ADD8), copy(NOMBRES), copy(ETAPE1_C),
+    { type: "mots", subject: "Vocabulaire", emoji: "🏠", title: "Liste 1.5 : La maison de Rosie", liste: "1.5", words: L15.mots, mode: "dicter" },
+    { type: "conjug", subject: "Conjugaison", emoji: "🔤", title: "Conjuguer AIMER au présent (cahier d'étude p. 26)", verbe: "aimer", temps: "present" },
+    { type: "conjug", subject: "Conjugaison", emoji: "🔤", title: "Conjuguer FINIR au présent (cahier d'étude p. 27)", verbe: "finir", temps: "present" },
+    { type: "tables", subject: "Maths", emoji: "➕", title: "Additions du 6 (Tam Tam p. 59)", op: "+", table: 6, count: 12, chrono: true },
     { type: "mots", subject: "Vocabulaire", emoji: "🔑", title: "Liste 1.4 : La bonne clé (12 mots au hasard)", liste: "1.4", words: L14.mots.concat(L14.horsLaLoi), mode: "dicter", count: 12 },
     { type: "tables", subject: "Maths", emoji: "➕", title: "Additions du 4 (Tam Tam p. 59)", op: "+", table: 4, count: 12, chrono: true },
     { type: "tables", subject: "Maths", emoji: "➕", title: "Additions du 5 (Tam Tam p. 59)", op: "+", table: 5, count: 12, chrono: true },
@@ -201,7 +210,7 @@ function buildClara() {
    .concat(C3_QUIZ_MATHS.map((q) => Object.assign({ type: "quiz" }, q)));
 
   return {
-    id: "clara", name: "Clara", grade: 3, gradeLabel: "3e année", gender: "f", planEdition: "2026-11-09",
+    id: "clara", name: "Clara", grade: 3, gradeLabel: "3e année", gender: "f", planEdition: "2026-11-16",
     spot: { body: "#5b8def", lunettes: "#8b5cf6" },
     settings: copy(BASE_SETTINGS), plan, library,
     progress: { points: 0, completed: {}, weekStart: null, history: [], medals: {}, stats: {} },

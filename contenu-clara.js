@@ -218,6 +218,15 @@ const C3_QUIZ_GRAMMAIRE = [
 
 // ---------- Quiz de maths (savoirs Tam Tam) ----------
 const C3_QUIZ_MATHS = [
+  { title: "Quiz : le plan cartésien", subject: "Maths", emoji: "🗺️", questions: [
+    { q: "Dans le couple (3, 5), le premier nombre se lit sur…", choices: ["l'axe horizontal (de gauche à droite)", "l'axe vertical (de bas en haut)"], answer: 0 },
+    { q: "Dans le couple (3, 5), le deuxième nombre se lit sur…", choices: ["l'axe horizontal (de gauche à droite)", "l'axe vertical (de bas en haut)"], answer: 1 },
+    { q: "Pour placer le point (2, 4), je pars de 0 et j'avance de…", choices: ["2 vers la droite, puis 4 vers le haut", "4 vers la droite, puis 2 vers le haut", "2 vers le haut, puis 4 vers la droite"], answer: 0 },
+    { q: "Les points (1, 6) et (6, 1) sont…", choices: ["au même endroit", "à des endroits différents"], answer: 1 },
+    { q: "Le point de départ (0, 0) s'appelle…", choices: ["l'origine", "la flèche", "le sommet"], answer: 0 },
+    { q: "Un couple de nombres s'écrit…", choices: ["entre parenthèses, séparés par une virgule", "entre crochets, séparés par un point", "sans parenthèses"], answer: 0 },
+    { q: "Le point (0, 3) est placé…", choices: ["sur l'axe vertical", "sur l'axe horizontal", "en dehors des axes"], answer: 0 },
+  ] },
   { title: "Quiz : la valeur de position", subject: "Maths", emoji: "🔢", questions: [
     { q: "Dans 1246, le chiffre 2 est à la position des…", choices: ["unités", "dizaines", "centaines"], answer: 2 },
     { q: "Dans 1026, le chiffre 2 vaut…", choices: ["2", "20", "200"], answer: 1 },

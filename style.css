@@ -302,6 +302,7 @@ label { display: block; font-weight: 600; margin: 10px 0 4px; font-size: .95rem;
 .wear-row b { display: block; margin-bottom: 8px; }
 .wear-row .row { gap: 8px; flex-wrap: wrap; }
 .unlock.medal { background: #ede9fe; }
+.quiz-img { font-size: 3.6rem; line-height: 1.2; text-align: center; margin: 12px 0 0; color: #3b82f6; letter-spacing: -2px; }
 .question.objets { font-size: 2rem; line-height: 1.6; letter-spacing: 2px; }
 
 /* ---------- Parent ---------- */

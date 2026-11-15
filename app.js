@@ -788,8 +788,9 @@ function exQuiz() {
     if (ex.showAnswer && i === Number(q.answer)) cls = "ok";
     return `<button data-action="choice" data-index="${i}" class="${cls}">${esc(c)}</button>`;
   }).join("");
+  // img : un dessin (lignes, figures) affiché en grand, que Spot ne lit pas
   return `<div class="counter">Question ${ex.step + 1} / ${ex.items.length}</div>
-    <div class="question text">${esc(q.q)}</div>
+    ${q.img ? `<div class="quiz-img">${esc(q.img)}</div>` : ""}<div class="question text">${esc(q.q)}</div>
     <div class="actions" style="margin:0 0 10px"><button class="ghost small" data-action="say" data-text="${esc(q.q + ". " + q.choices.join(", ou, "))}">🔊 Écouter la question</button></div>
     <div class="choices">${choices}</div>${feedbackHTML()}`;
 }

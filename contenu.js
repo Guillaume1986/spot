@@ -152,9 +152,9 @@ const SONS = [
 // ---------- Tempête de sons (cartes dans les sacs Ziploc) ----------
 // Chaque carte : le son + un mot repère que Spot dit pour vérifier
 const TEMPETE_DEFAUT = {
-  rose: ["a", "e", "i", "o", "u", "y", "é", "è"],                                          // voyelles
+  rose: ["a", "e", "i", "o", "u", "y", "é", "è", "ê", "ë"],                                // voyelles
   bleu: ["l", "m", "s", "r", "f", "n", "j", "p", "b", "t", "d", "c", "k", "q", "g", "v"],  // consonnes
-  jaune: ["un", "ch", "ou", "in", "on", "an", "en", "au", "eau", "qu", "oi"],              // sons amoureux
+  jaune: ["un", "ch", "ou", "in", "on", "an", "en", "au", "eau", "qu", "oi", "ai", "ei"],  // sons amoureux
 };
 const TEMPETE_REPERES = {
   a: "ami", e: "le", i: "île", o: "olive", u: "une", y: "pyjama", é: "école", è: "mère", ê: "forêt", ë: "Noël",
@@ -268,6 +268,21 @@ const QUIZ_MATHS = [
     { q: "Le nombre 3 est…", choices: ["pair", "impair"], answer: 1 },
   ] },
 ];
+
+// Numérik p. 24 : « Les lignes » et « Les figures planes ». img = dessin affiché en grand.
+const QUIZ_LIGNES_FIGURES = { title: "Quiz : les lignes et les figures planes (Numérik p. 24)", subject: "Maths", emoji: "📐", questions: [
+  { img: "━━━━━━", q: "Cette ligne est…", choices: ["droite", "courbe", "brisée"], answer: 0 },
+  { img: "∿∿∿∿", q: "Cette ligne est…", choices: ["droite", "courbe", "brisée"], answer: 1 },
+  { img: "╱╲╱╲╱╲", q: "Cette ligne est…", choices: ["droite", "courbe", "brisée"], answer: 2 },
+  { img: "◯", q: "Cette ligne est…", choices: ["ouverte", "fermée"], answer: 1 },
+  { img: "⌒", q: "Cette ligne est…", choices: ["ouverte", "fermée"], answer: 0 },
+  { img: "▲", q: "Quelle est cette figure ?", choices: ["un carré", "un triangle", "un cercle"], answer: 1 },
+  { img: "■", q: "Quelle est cette figure ?", choices: ["un carré", "un rectangle", "un triangle"], answer: 0 },
+  { img: "▬", q: "Quelle est cette figure ?", choices: ["un cercle", "un carré", "un rectangle"], answer: 2 },
+  { img: "●", q: "Quelle est cette figure ?", choices: ["un triangle", "un cercle", "un rectangle"], answer: 1 },
+  { q: "Combien de côtés a un triangle ?", choices: ["3", "4", "5"], answer: 0 },
+  { q: "Quelle figure n'a que des lignes courbes ?", choices: ["le carré", "le cercle", "le triangle"], answer: 1 },
+] };
 
 // Lignes de la grille de nombres : plus petit et plus grand nombre proposés aux parents
 const GRILLE_MAX_CHOIX = [9, 19, 29, 39, 49, 59, 69, 79, 89, 99];
