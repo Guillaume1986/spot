@@ -154,7 +154,7 @@ const SONS = [
 const TEMPETE_DEFAUT = {
   rose: ["a", "e", "i", "o", "u", "y", "é", "è", "ê", "ë"],                                // voyelles
   bleu: ["l", "m", "s", "r", "f", "n", "j", "p", "b", "t", "d", "c", "k", "q", "g", "v"],  // consonnes
-  jaune: ["un", "ch", "ou", "in", "on", "an", "en", "au", "eau", "qu", "oi", "ai", "ei"],  // sons amoureux
+  jaune: ["un", "ch", "ou", "in", "on", "an", "en", "au", "eau", "qu", "oi", "ai", "ei", "eu"],  // sons amoureux
 };
 const TEMPETE_REPERES = {
   a: "ami", e: "le", i: "île", o: "olive", u: "une", y: "pyjama", é: "école", è: "mère", ê: "forêt", ë: "Noël",
@@ -282,6 +282,22 @@ const QUIZ_LIGNES_FIGURES = { title: "Quiz : les lignes et les figures planes (N
   { img: "●", q: "Quelle est cette figure ?", choices: ["un triangle", "un cercle", "un rectangle"], answer: 1 },
   { q: "Combien de côtés a un triangle ?", choices: ["3", "4", "5"], answer: 0 },
   { q: "Quelle figure n'a que des lignes courbes ?", choices: ["le carré", "le cercle", "le triangle"], answer: 1 },
+] };
+
+// Numérik p. 25 : « Les solides » et « Les faces ». img = objet affiché en grand (Spot ne le lit pas).
+const QUIZ_SOLIDES_FACES = { title: "Quiz : les solides et leurs faces (Numérik p. 25)", subject: "Maths", emoji: "🧊", questions: [
+  { img: "🎲", q: "Un dé ressemble à…", choices: ["un cube", "une boule", "un cône"], answer: 0 },
+  { img: "⚽", q: "Un ballon ressemble à…", choices: ["un cylindre", "une boule", "un cube"], answer: 1 },
+  { img: "🥫", q: "Une boîte de conserve ressemble à…", choices: ["un cône", "un cube", "un cylindre"], answer: 2 },
+  { img: "🍦", q: "Un cornet de crème glacée ressemble à…", choices: ["un cône", "une boule", "un prisme"], answer: 0 },
+  { img: "📦", q: "Une boîte en carton ressemble à…", choices: ["une boule", "un prisme", "un cône"], answer: 1 },
+  { q: "Quel solide peut rouler dans toutes les directions ?", choices: ["le cube", "la boule", "le prisme"], answer: 1 },
+  { q: "Quel solide ne peut pas rouler ?", choices: ["le cube", "le cylindre", "la boule"], answer: 0 },
+  { q: "Combien de faces a un cube ?", choices: ["4", "6", "8"], answer: 1 },
+  { q: "Les faces d'un cube ont la forme de…", choices: ["cercles", "triangles", "carrés"], answer: 2 },
+  { q: "Une face plane, c'est une face…", choices: ["toute plate", "toute ronde"], answer: 0 },
+  { q: "Le cylindre a…", choices: ["seulement des faces planes", "des faces planes et une face courbe", "seulement une face courbe"], answer: 1 },
+  { q: "La boule a…", choices: ["une seule face courbe", "6 faces planes", "2 faces planes"], answer: 0 },
 ] };
 
 // Lignes de la grille de nombres : plus petit et plus grand nombre proposés aux parents
